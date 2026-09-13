@@ -82,9 +82,34 @@ purchase them — everything reads from `theme.fonts`.
 
 ## EAS Build
 
+`eas.json` ships with three profiles:
+
+- `development` — a debug dev-client build (use this if Expo Go can't run the
+  app's native modules)
+- `preview` — an installable `.apk` you can hand to anyone, no store account
+  needed on the receiving end
+- `production` — an `.aab` for a real Play Store submission
+
+To get an installable build on your phone:
+
 ```bash
 npm install -g eas-cli
-eas login
-eas build --platform android
+eas login              # creates a free Expo account if you don't have one
+eas build --platform android --profile preview
+```
+
+That prints a build page URL; once it finishes, the page has a QR code and a
+direct APK download link. Scan it (or download and open the APK) on an
+Android phone with "install unknown apps" allowed for your browser.
+
+The first time you run this in a fresh clone, `eas build` will ask to link
+the project to an EAS project id (it can create one for you automatically,
+or run `eas init` first) and to generate/upload an Android keystore. Say yes
+to both, EAS manages the keystore for you.
+
+For a real store submission later:
+
+```bash
+eas build --platform android --profile production
 eas submit --platform android
 ```
