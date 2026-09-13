@@ -10,7 +10,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { MemoryCanvasPreview } from '../components/canvas/MemoryCanvasPreview';
@@ -29,11 +35,12 @@ export function FlipRevealScreen({ route, navigation }: Props) {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [reflection, setReflection] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
   const [voiceUri, setVoiceUri] = useState<string | undefined>(undefined);
   const [celebrating, setCelebrating] = useState(false);
   const hadBackRef = useRef(false);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
+  const isRecording = recorderState.isRecording;
 
   useEffect(() => {
     const unsubscribe = subscribeToMemory(memoryId, (m) => {
@@ -71,29 +78,18 @@ export function FlipRevealScreen({ route, navigation }: Props) {
   };
 
   const startRecording = async () => {
-    const permission = await Audio.requestPermissionsAsync();
+    const permission = await requestRecordingPermissionsAsync();
     if (!permission.granted) return;
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-    const { recording: rec } = await Audio.Recording.createAsync(
-      Audio.RecordingOptionsPresets.HIGH_QUALITY,
-    );
-    setRecording(rec);
-    setIsRecording(true);
-    setTimeout(() => stopRecording(rec), 10000);
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+    await recorder.prepareToRecordAsync();
+    recorder.record();
+    setTimeout(stopRecording, 10000);
   };
 
-  const stopRecording = async (rec?: Audio.Recording) => {
-    const target = rec ?? recording;
-    if (!target) return;
-    setIsRecording(false);
-    try {
-      await target.stopAndUnloadAsync();
-      const uri = target.getURI();
-      if (uri) setVoiceUri(uri);
-    } catch {
-      // recording may already be stopped by the timeout
-    }
-    setRecording(null);
+  const stopRecording = async () => {
+    if (!recorder.isRecording) return;
+    await recorder.stop();
+    if (recorder.uri) setVoiceUri(recorder.uri);
   };
 
   const handleSave = async () => {

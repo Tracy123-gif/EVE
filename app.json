@@ -56,7 +56,7 @@
         }
       ],
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "EVE uses your microphone to record short voice notes on your memories."
         }
