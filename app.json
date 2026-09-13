@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "EVE",
+    "slug": "EVE",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "eve",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.eve.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "EVE uses your camera so you can add photos to your memory pages.",
+        "NSPhotoLibraryUsageDescription": "EVE needs access to your photos so you can add them to your memory pages.",
+        "NSMicrophoneUsageDescription": "EVE uses your microphone to record short voice notes on your memories."
+      }
+    },
+    "android": {
+      "package": "com.eve.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FAF3E6",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "EVE needs access to your photos so you can add them to your memory pages."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "EVE uses your camera so you can add photos to your memory pages.",
+          "microphonePermission": "EVE uses your microphone to record short voice notes on your memories."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "EVE uses your microphone to record short voice notes on your memories."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4A3140"
+        }
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}
