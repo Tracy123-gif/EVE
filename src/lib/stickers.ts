@@ -11,6 +11,10 @@ export const stickers: StickerAsset[] = Array.from({ length: 19 }, (_, i) => {
   return { id, source: stickerSource(id) };
 });
 
+export function getSticker(id: string): ReturnType<typeof require> {
+  return stickers.find((s) => s.id === id)!.source;
+}
+
 function stickerSource(id: string) {
   switch (id) {
     case '1':
