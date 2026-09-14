@@ -1,9 +1,16 @@
 // Cloudinary hosts the photos and voice notes users add to a memory, since
 // Firebase Storage now requires a billing plan even for free-tier usage.
 // Uploads use an unsigned upload preset, so no server-side signing step or
-// secret key is needed from the client.
-const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '';
-const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? '';
+// secret key is needed from the client. Like the Firebase config, these
+// values aren't secret (an unsigned preset only allows uploads, not reads
+// of other assets or account changes), so they're checked in directly; an
+// EXPO_PUBLIC_ env var, if set, still overrides them.
+const DEFAULT_CLOUDINARY_CLOUD_NAME = 'dvoucuthp';
+const DEFAULT_CLOUDINARY_UPLOAD_PRESET = 'memory';
+
+const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ?? DEFAULT_CLOUDINARY_CLOUD_NAME;
+const uploadPreset =
+  process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? DEFAULT_CLOUDINARY_UPLOAD_PRESET;
 
 export const isCloudinaryConfigured = Boolean(cloudName && uploadPreset);
 
