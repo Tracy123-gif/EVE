@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  LayoutChangeEvent,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { Icon, type IconName } from '../components/Icon';
@@ -13,6 +19,7 @@ import { MusicSheet } from '../components/canvas/sheets/MusicSheet';
 import { colors, spacing } from '../theme/theme';
 import { useEditorStore } from '../store/editorStore';
 import { generateId } from '../lib/id';
+import { uploadToCloudinary } from '../lib/cloudinary';
 
 type Tool = 'background' | 'upload' | 'camera' | 'asset' | 'music' | 'text' | null;
 
@@ -28,6 +35,7 @@ const TOOLS: { key: Exclude<Tool, null>; icon: IconName }[] = [
 export function EditorScreen() {
   const [activeTool, setActiveTool] = useState<Tool>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [uploading, setUploading] = useState(false);
 
   const elements = useEditorStore((s) => s.elements);
   const backgroundKey = useEditorStore((s) => s.backgroundKey);
@@ -51,6 +59,27 @@ export function EditorScreen() {
     y: Math.max(0, canvasSize.height / 2 - size / 2),
   });
 
+  const addPhotoElement = async (localUri: string) => {
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(localUri, 'image');
+      const pos = centerPosition(160);
+      addElement({
+        id: generateId(),
+        type: 'photo',
+        x: pos.x,
+        y: pos.y,
+        width: 160,
+        height: 160,
+        rotation: 0,
+        zIndex: 0,
+        value: url,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleToolPress = async (tool: Exclude<Tool, null>) => {
     if (tool === 'upload') {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -58,18 +87,7 @@ export function EditorScreen() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0]) {
-        const pos = centerPosition(160);
-        addElement({
-          id: generateId(),
-          type: 'photo',
-          x: pos.x,
-          y: pos.y,
-          width: 160,
-          height: 160,
-          rotation: 0,
-          zIndex: 0,
-          value: result.assets[0].uri,
-        });
+        await addPhotoElement(result.assets[0].uri);
       }
       return;
     }
@@ -78,18 +96,7 @@ export function EditorScreen() {
       if (!permission.granted) return;
       const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
       if (!result.canceled && result.assets[0]) {
-        const pos = centerPosition(160);
-        addElement({
-          id: generateId(),
-          type: 'photo',
-          x: pos.x,
-          y: pos.y,
-          width: 160,
-          height: 160,
-          rotation: 0,
-          zIndex: 0,
-          value: result.assets[0].uri,
-        });
+        await addPhotoElement(result.assets[0].uri);
       }
       return;
     }
@@ -125,6 +132,11 @@ export function EditorScreen() {
               onUpdate={(patch) => updateElement(el.id, patch)}
             />
           ))}
+        {uploading && (
+          <View style={styles.uploadOverlay}>
+            <ActivityIndicator color={colors.paper} size="large" />
+          </View>
+        )}
       </View>
 
       <View style={styles.toolbar}>
@@ -132,6 +144,7 @@ export function EditorScreen() {
           <TouchableOpacity
             key={tool.key}
             style={styles.toolButton}
+            disabled={uploading}
             onPress={() => handleToolPress(tool.key)}
           >
             <Icon name={tool.icon} size={22} color={colors.plum} />
@@ -210,6 +223,16 @@ const styles = StyleSheet.create({
   canvas: {
     flex: 1,
     overflow: 'hidden',
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   toolbar: {
     flexDirection: 'row',

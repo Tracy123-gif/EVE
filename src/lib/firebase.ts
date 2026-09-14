@@ -6,7 +6,6 @@ import {
   initializeAuth,
 } from 'firebase/auth';
 import { type Firestore, getFirestore } from 'firebase/firestore';
-import { type FirebaseStorage, getStorage } from 'firebase/storage';
 
 // Firebase's client-side web config (apiKey, projectId, etc.) is not a
 // secret: it's baked into every client build by design, and access control
@@ -41,7 +40,6 @@ export const isFirebaseConfigured = Boolean(
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
-let storage: FirebaseStorage | undefined;
 
 if (isFirebaseConfigured) {
   app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
@@ -49,13 +47,12 @@ if (isFirebaseConfigured) {
     persistence: getReactNativePersistence(AsyncStorage),
   });
   db = getFirestore(app);
-  storage = getStorage(app);
 } else if (__DEV__) {
   // eslint-disable-next-line no-console
   console.warn(
     'Firebase is not configured. Copy .env.example to .env and fill in ' +
-      'your Firebase project keys to enable auth, Firestore, and storage.',
+      'your Firebase project keys to enable auth and Firestore.',
   );
 }
 
-export { app, auth, db, storage };
+export { app, auth, db };

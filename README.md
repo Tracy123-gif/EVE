@@ -12,32 +12,53 @@ itself.
 - React Navigation (native stack + drawer)
 - Zustand for state
 - Firebase (Auth, Firestore) for accounts, saved memories, and shared rooms
-- `expo-image-picker` / `expo-camera` for photos, `expo-av` for voice notes
+- Cloudinary for hosting photos and voice notes (Firebase Storage now
+  requires a paid plan even for free-tier usage, so it isn't used)
+- `expo-image-picker` / `expo-camera` for photos, `expo-audio` for voice notes
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.example .env   # then fill in your Firebase project keys
 npx expo start
 ```
 
+Firebase auth/Firestore work out of the box: the project's client-side
+config is checked into `src/lib/firebase.ts` (these values aren't secret —
+Firebase's security comes from Firestore rules, not from hiding them). To
+point at a different Firebase project instead, copy `.env.example` to
+`.env` and fill in your own keys; any `EXPO_PUBLIC_FIREBASE_*` var there
+overrides the default.
+
 ### Firebase setup
 
-1. Create a Firebase project, enable **Authentication** (Email/Password, and
-   Google if you want it) and **Firestore**.
-2. Copy your web app config into `.env` (see `.env.example`). These are
-   `EXPO_PUBLIC_*` variables, inlined at build time — no extra config needed.
-3. For Google sign-in, also set `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`,
-   `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, and/or `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
-   from a Google Cloud OAuth client. Without these the Google button is hidden
-   and email/password auth still works.
-4. Firestore collections used: `memories` (one doc per plan, keyed by a
+1. In the Firebase console, enable **Authentication** (Email/Password) and
+   create a **Firestore Database**.
+2. Firestore collections used: `memories` (one doc per plan, keyed by a
    generated id) and `rooms` (one doc per shared co-design session).
+3. Skip **Storage** — it now requires the paid Blaze plan even for free-tier
+   usage, so this app uses Cloudinary instead (see below).
 
-Until `.env` is filled in, the app still runs and every screen renders, but
-auth/save actions will show a friendly "Firebase isn't configured" message
-instead of crashing.
+### Cloudinary setup
+
+Photos and voice notes upload to Cloudinary instead of Firebase Storage.
+
+1. Create a free account at [cloudinary.com](https://cloudinary.com) (no
+   card required).
+2. Note your **Cloud name** from the dashboard.
+3. Go to Settings > Upload > Upload presets > Add upload preset, set
+   **Signing Mode** to **Unsigned**, and note its name.
+4. Copy `.env.example` to `.env` and fill in:
+   ```
+   EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+   EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset-name
+   ```
+   For EAS builds, add the same two as environment variables on the
+   project's `expo.dev` dashboard.
+
+Until Cloudinary is configured, photo/voice-note uploads will throw an
+error instead of silently failing, so this step isn't optional once you're
+testing those features.
 
 ### Fonts
 

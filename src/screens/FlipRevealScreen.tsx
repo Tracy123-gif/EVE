@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -25,6 +26,7 @@ import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { saveMemory, subscribeToMemory } from '../lib/memoriesService';
+import { uploadToCloudinary } from '../lib/cloudinary';
 import type { RootStackParamList } from '../navigation/types';
 import type { Memory } from '../types/models';
 
@@ -37,6 +39,8 @@ export function FlipRevealScreen({ route, navigation }: Props) {
   const [photos, setPhotos] = useState<string[]>([]);
   const [voiceUri, setVoiceUri] = useState<string | undefined>(undefined);
   const [celebrating, setCelebrating] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadingVoice, setUploadingVoice] = useState(false);
   const hadBackRef = useRef(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
@@ -72,8 +76,15 @@ export function FlipRevealScreen({ route, navigation }: Props) {
       allowsMultipleSelection: true,
       quality: 0.8,
     });
-    if (!result.canceled) {
-      setPhotos((prev) => [...prev, ...result.assets.map((a) => a.uri)]);
+    if (result.canceled || !result.assets.length) return;
+    setUploadingPhotos(true);
+    try {
+      const urls = await Promise.all(
+        result.assets.map((a) => uploadToCloudinary(a.uri, 'image')),
+      );
+      setPhotos((prev) => [...prev, ...urls]);
+    } finally {
+      setUploadingPhotos(false);
     }
   };
 
@@ -89,7 +100,14 @@ export function FlipRevealScreen({ route, navigation }: Props) {
   const stopRecording = async () => {
     if (!recorder.isRecording) return;
     await recorder.stop();
-    if (recorder.uri) setVoiceUri(recorder.uri);
+    if (!recorder.uri) return;
+    setUploadingVoice(true);
+    try {
+      const url = await uploadToCloudinary(recorder.uri, 'video');
+      setVoiceUri(url);
+    } finally {
+      setUploadingVoice(false);
+    }
   };
 
   const handleSave = async () => {
@@ -148,10 +166,16 @@ export function FlipRevealScreen({ route, navigation }: Props) {
               placeholderTextColor={colors.plum + '80'}
               multiline
             />
-            <Button label="add more photos" variant="secondary" onPress={handleAddPhotos} />
+            <Button
+              label="add more photos"
+              variant="secondary"
+              loading={uploadingPhotos}
+              onPress={handleAddPhotos}
+            />
             <Button
               label={isRecording ? 'stop recording' : voiceUri ? 're-record voice note' : 'record voice note'}
               variant="secondary"
+              loading={uploadingVoice}
               onPress={isRecording ? () => stopRecording() : startRecording}
               style={{ marginTop: spacing.sm }}
             />
@@ -159,8 +183,16 @@ export function FlipRevealScreen({ route, navigation }: Props) {
           </View>
         ) : (
           <View style={styles.backContent}>
-            <TouchableOpacity style={styles.dashedButton} onPress={handleAddPhotos}>
-              <Text style={styles.dashedLabel}>add today's photos</Text>
+            <TouchableOpacity
+              style={styles.dashedButton}
+              disabled={uploadingPhotos}
+              onPress={handleAddPhotos}
+            >
+              {uploadingPhotos ? (
+                <ActivityIndicator color={colors.plum} />
+              ) : (
+                <Text style={styles.dashedLabel}>add today's photos</Text>
+              )}
             </TouchableOpacity>
             <TextInput
               style={styles.reflectionInput}
@@ -173,6 +205,7 @@ export function FlipRevealScreen({ route, navigation }: Props) {
             <Button
               label={isRecording ? 'stop recording' : 'record voice note'}
               variant="secondary"
+              loading={uploadingVoice}
               onPress={isRecording ? () => stopRecording() : startRecording}
             />
             <Button
